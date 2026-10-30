@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('trees', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
             $table->string('name');
             $table->integer('level')->default(1);
@@ -24,7 +25,6 @@ return new class extends Migration
             $table->datetime('next_care_at')->nullable();
             $table->datetime('last_decay_at')->nullable();
             $table->datetime('harvested_at')->nullable();
-            $table->integer('user_id');
         });
     }
 

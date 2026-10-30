@@ -9,6 +9,14 @@ class Tree extends Model
     //fillable attributes
     protected $fillable = [
         'name',
-        'user_id'
     ];
+
+    protected $casts = [
+    'next_care_at' => 'datetime',
+    ];//Lo lee como fecha y no como texto
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }

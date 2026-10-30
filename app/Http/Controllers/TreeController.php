@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\Api\V1\StoreRequest;
+use App\Http\Requests\Api\V1\UpdateRequest;
+use App\Http\Resources\TreeResource;
 use App\Models\Tree;
 
 class TreeController extends Controller
@@ -13,8 +16,11 @@ class TreeController extends Controller
     public function index()
     {
         //
-        $trees = Tree::all();
-        return view('index', compact('trees'));
+        $trees = Tree::query()
+        ->latest()
+        ->paginate(15);
+
+        return TreeResource::collection($trees);
     }
 
     /**
@@ -29,20 +35,15 @@ class TreeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreRequest $request)
     {
         //
-     $validated = $request->validate([
-        'name'    => 'required|string|max:255',
-        'user_id' => 'required|integer|exists:users,id',
-    ]);
 
-    $tree = Tree::create([
-        'name'    => $validated['name'],
-        'user_id' => $validated['user_id'],
-    ]);
+    $tree = $request->user()->trees()->create($request->validated());
 
-    return response()->json($tree, 201);
+    return (new TreeResource($tree))
+        ->response()
+        ->setStatusCode(201);
     }
 
     /**
@@ -52,7 +53,9 @@ class TreeController extends Controller
     {
         //
         $tree = Tree::findOrFail($id);
-        return view('show', compact('tree'));
+        return (new TreeResource($tree))
+            ->response()
+            ->setStatusCode(200);
     }
 
     /**
@@ -66,7 +69,7 @@ class TreeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateRequest $request, string $id)
     {
         //
     }
@@ -76,6 +79,47 @@ class TreeController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+    $tree = Tree::findOrFail($id);
+
+    $this->authorize('delete', $tree);
+    $tree->delete();
+
+    return response()->noContent();
+    }   
+
+    public function care(Request $request, Tree $tree)
+    {
+
+        $this->authorize('care', $tree);
+
+        if (in_array($tree->status, ['DEAD', 'MATURE']))
+            {
+                return response()->json(['message' => 'Tree cannot be cared for in its current state'], 409);
+            }
+
+        if ($tree->next_care_at && now()->lt($tree->next_care_at)) {
+        return response()->json(['message' => 'Aún no puedes cuidar este árbol.',
+            'next_care_at' => $tree->next_care_at,
+        ], 409);
+        }
+
+         $tree->progress += 1;
+        $tree->health = min(100, $tree->health + 20);
+
+        if ($tree->progress >= 5) {
+        $tree->level += 1;
+        $tree->progress = 0;
+        }
+
+        if ($tree->level >= 10) {
+        $tree->status = 'MATURE';
+        }
+
+        $tree->last_cared_at = now();
+
+        $tree->next_care_at = now()->addMinutes(60);
+        $tree->save();
+
+        return response()->json($tree, 200);  
     }
 }
