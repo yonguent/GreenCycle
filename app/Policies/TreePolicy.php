@@ -21,7 +21,7 @@ class TreePolicy
      */
     public function view(User $user, Tree $tree): bool
     {
-        return false;
+        return false; 
     }
 
     /**
@@ -37,7 +37,7 @@ class TreePolicy
      */
     public function update(User $user, Tree $tree): bool
     {
-        return false;
+        return false; 
     }
 
     /**
