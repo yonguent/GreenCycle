@@ -94,13 +94,13 @@ class TreeController extends Controller
 
         if (in_array($tree->status, ['DEAD', 'MATURE']))
             {
-                return response()->json(['message' => 'Tree cannot be cared for in its current state'], 409);
+                return response()->json(['error' => "El árbol está en estado {$tree->status} y no puede recibir más cuidados.",], 409);
             }
 
         if ($tree->next_care_at && now()->lt($tree->next_care_at)) {
-        return response()->json(['message' => 'Aún no puedes cuidar este árbol.',
-            'next_care_at' => $tree->next_care_at,
-        ], 409);
+        return response()->json(['error' => 'El árbol se encuentra en período de enfriamiento.',
+        'next_care_at' => $tree->next_care_at->toIso8601ZuluString(),], 409);
+
         }
 
          $tree->progress += 1;
@@ -120,6 +120,7 @@ class TreeController extends Controller
         $tree->next_care_at = now()->addMinutes(60);
         $tree->save();
 
-        return response()->json($tree, 200);  
+       return response()->json(['message' => 'Cuidado aplicado con éxito',
+       'tree' => new TreeResource($tree),], 200);
     }
 }

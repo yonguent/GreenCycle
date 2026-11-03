@@ -15,11 +15,13 @@ class TreeResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'        => $this->id,
-            'name'      => $this->name,
-            'user_id'   => $this->user_id,
-            'created_at'=> $this->created_at,
-            'updated_at'=> $this->updated_at,
+        'id'           => $this->id,
+        'name'         => $this->name,
+        'level'        => $this->level,
+        'health'       => $this->health,
+        'progress'     => $this->progress,
+        'status'       => $this->status,
+        'next_care_at' => $this->next_care_at?->toIso8601ZuluString(),
         ];
     }
 }
